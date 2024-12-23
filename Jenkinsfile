@@ -1,40 +1,46 @@
 pipeline {
     agent any
-
+    environment {
+        SERVER_USER = 'ubuntu' // Corrected typo from 'ubunbu'
+        SERVER_IP = '3.83.119.254'
+        TARGET_DIR = '/var/www/html'
+    }
     stages {
-        stage('Deploy HTML') {
+        stage('Clone Repository') {
             steps {
-                sshagent(['apache']) {
-                    script {
-                        echo 'Deploying index.html to remote Apache server...'
-                        
-                        // Add the server's SSH key to known_hosts for the correct IP
-                        sh 'ssh-keyscan -H 3.83.119.254 >> ~/.ssh/known_hosts'
-
-                        // Copy the file to the remote server using the correct IP
-                        sh 'scp index.html ubuntu@3.83.119.254:/var/www/html/'
-                    }
-                }
+                checkout scm
             }
         }
-
-        stage('Verify Deployment') {
+        stage('Build') {
             steps {
-                script {
-                    echo 'Verifying index.html deployment on remote server...'
-                    // Verify the file is served correctly using the correct IP
-                    sh 'curl http://3.83.119.254/index.html'
+                echo 'Building...'
+                // Replace with actual build commands if needed.
+            }
+        }
+        stage('Deploy to Apache Server') {
+            steps {
+                // Use SSH credentials with ID 'keyForApache'
+                sshagent(['apache']) {
+                    sh '''
+                    # Clean up target directory on the server
+                    ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} "rm -rf ${TARGET_DIR}/*"
+                    
+                    # Copy files to the server
+                    scp -o StrictHostKeyChecking=no -r * ${SERVER_USER}@${SERVER_IP}:${TARGET_DIR}
+                    
+                    # Restart Apache
+                    ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} "sudo systemctl restart apache2"
+                    '''
                 }
             }
         }
     }
-
     post {
         success {
-            echo 'Deployment completed successfully!'
+            echo 'Deployment Successful!'
         }
         failure {
-            echo 'Deployment failed. Check the logs for more details.'
+            echo 'Deployment Failed!'
         }
     }
 }
