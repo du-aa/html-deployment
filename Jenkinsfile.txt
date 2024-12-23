@@ -1,0 +1,25 @@
+pipeline {
+    agent any
+    environment {
+        APACHE_USER = 'ec2-user'                  // Change to your Apache server user
+        APACHE_HOST = 'your-apache-server-ip'    // Replace with your server IP
+        SSH_KEY = '/path/to/your/private/key.pem' // Private key path
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/your-username/html-deployment.git'
+            }
+        }
+        stage('Deploy to Apache') {
+            steps {
+                script {
+                    sh """
+                    scp -o StrictHostKeyChecking=no -i ${SSH_KEY} index.html ${APACHE_USER}@${APACHE_HOST}:/var/www/html/index.html
+                    ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${APACHE_USER}@${APACHE_HOST} 'sudo systemctl restart httpd'
+                    """
+                }
+            }
+        }
+    }
+}
