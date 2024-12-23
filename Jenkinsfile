@@ -4,15 +4,15 @@ pipeline {
     stages {
         stage('Deploy HTML') {
             steps {
-                sshagent(['apache-deploy-key']) {
+                sshagent(['apache']) {
                     script {
-                        echo 'Deploying Main.html to remote Apache server...'
+                        echo 'Deploying index.html to remote Apache server...'
                         
                         // Add the server's SSH key to known_hosts for the correct IP
-                        sh 'ssh-keyscan -H 13.49.72.39 >> ~/.ssh/known_hosts'
+                        sh 'ssh-keyscan -H 3.83.119.254 >> ~/.ssh/known_hosts'
 
                         // Copy the file to the remote server using the correct IP
-                        sh 'scp Main.html ubuntu@13.49.72.39:/var/www/html/'
+                        sh 'scp index.html ubuntu@3.83.119.254:/var/www/html/'
                     }
                 }
             }
@@ -21,9 +21,9 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 script {
-                    echo 'Verifying Main.html deployment on remote server...'
+                    echo 'Verifying index.html deployment on remote server...'
                     // Verify the file is served correctly using the correct IP
-                    sh 'curl http://13.49.72.39/Main.html'
+                    sh 'curl http://3.83.119.254/index.html'
                 }
             }
         }
