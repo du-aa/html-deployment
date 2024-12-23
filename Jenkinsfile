@@ -1,26 +1,40 @@
 pipeline {
     agent any
-    environment {
-        APACHE_HOST = 'your-apache-server-ip'         // Replace with the Apache server's IP
-        APACHE_USER = 'ec2-user'                     // Replace with the Apache server's user
-    }
+
     stages {
-        stage('Checkout') {
+        stage('Deploy HTML') {
             steps {
-                // Pull the latest code from GitHub
-                git branch: 'main', url: 'https://github.com/your-username/html-deployment.git'
-            }
-        }
-        stage('Deploy to Apache') {
-            steps {
-                // SSH into the Apache server and deploy the file
-                sshagent(['apache-ssh-credentials']) {  // Use the Jenkins credential ID for the SSH key
-                    sh """
-                    scp index.html ${APACHE_USER}@${APACHE_HOST}:/var/www/html/
-                    ssh ${APACHE_USER}@${APACHE_HOST} 'sudo systemctl restart httpd'
-                    """
+                sshagent(['apache-deploy-key']) {
+                    script {
+                        echo 'Deploying Main.html to remote Apache server...'
+                        
+                        // Add the server's SSH key to known_hosts for the correct IP
+                        sh 'ssh-keyscan -H 13.49.72.39 >> ~/.ssh/known_hosts'
+
+                        // Copy the file to the remote server using the correct IP
+                        sh 'scp Main.html ubuntu@13.49.72.39:/var/www/html/'
+                    }
                 }
             }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                script {
+                    echo 'Verifying Main.html deployment on remote server...'
+                    // Verify the file is served correctly using the correct IP
+                    sh 'curl http://13.49.72.39/Main.html'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deployment completed successfully!'
+        }
+        failure {
+            echo 'Deployment failed. Check the logs for more details.'
         }
     }
 }
