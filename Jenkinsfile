@@ -1,46 +1,38 @@
 pipeline {
     agent any
-    environment {
-        SERVER_USER = 'ubuntu' // Corrected typo from 'ubunbu'
-        SERVER_IP = '3.83.119.254'
-        TARGET_DIR = '/var/www/html'
-    }
     stages {
-        stage('Clone Repository') {
+        stage('Deploy HTML') {
             steps {
-                checkout scm
+                sshagent(['apache-deploy-key']) { // Use the correct SSH credentials ID
+                    script {
+                        echo 'Deploying index.html to remote Apache server...'
+                        
+                        // Add the server's SSH key to known hosts
+                        sh 'ssh-keyscan -H http://54.87.15.219 >> ~/.ssh/known_hosts'
+                        
+                        // Copy the file to the remote server using SCP
+                        sh 'scp index.html ubuntu@http://54.87.15.219:/var/www/html/'
+                    }
+                }
             }
         }
-        stage('Build') {
+        stage('Verify Deployment') {
             steps {
-                echo 'Building...'
-                // Replace with actual build commands if needed.
-            }
-        }
-        stage('Deploy to Apache Server') {
-            steps {
-                // Use SSH credentials with ID 'keyForApache'
-                sshagent(['apache']) {
-                    sh '''
-                    # Clean up target directory on the server
-                    ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} "rm -rf ${TARGET_DIR}/*"
+                script {
+                    echo 'Verifying Hello.html deployment on remote server...'
                     
-                    # Copy files to the server
-                    scp -o StrictHostKeyChecking=no -r * ${SERVER_USER}@${SERVER_IP}:${TARGET_DIR}
-                    
-                    # Restart Apache
-                    ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} "sudo systemctl restart apache2"
-                    '''
+                    // Verify the file is served correctly using curl
+                    sh 'curl http://54.87.15.219//index.html'
                 }
             }
         }
     }
     post {
         success {
-            echo 'Deployment Successful!'
+            echo 'Deployment completed successfully!'
         }
         failure {
-            echo 'Deployment Failed!'
+            echo 'Deployment failed. Check the logs for more details.'
         }
     }
 }
