@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        REMOTE_HOST = '3.83.193.75' // Replace with your Apache server IP
-        DEPLOY_USER = 'ubuntu'      // Replace with your deployment user
-        REMOTE_PATH = '/var/www/html/' // Path to deploy files on the server
+        REMOTE_HOST = '3.86.202.150' 
+        DEPLOY_USER = 'ubuntu'      
+        REMOTE_PATH = '/var/www/html/' 
     }
 
     stages {
